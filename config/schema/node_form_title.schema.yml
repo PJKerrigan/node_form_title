@@ -1,0 +1,12 @@
+# Schema for configuration of the Node Form Title module.
+
+node.type.*.third_party.node_form_title:
+  type: mapping
+  label: 'Per content-type form title settings'
+  mapping:
+    add_title:
+      type: string
+      label: 'Add node title'
+    edit_title:
+      type: string
+      label: 'Edit node title'

@@ -1,0 +1,87 @@
+<?php
+/**
+ * @file
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\NodeTypeInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\node\NodeInterface;
+use Drupal\user\Entity\User;
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ */
+function node_form_title_form_node_type_form_alter(&$form, FormStateInterface $form_state) {
+  // Get the node type entity.
+  $type = $form_state->getFormObject()->getEntity();
+
+  // Options container.
+  $form['node_form_title'] = [
+    '#type' => 'details',
+    '#title' => t('Node form title settings'),
+    '#group' => 'additional_settings',
+  ];
+  // Add title.
+  $form['node_form_title']['add_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Add Title'),
+    '#default_value' => $type->getThirdPartySetting('node_form_title', 'add_title', 'Create new ' . $type->label()),
+    '#description' => t('The title displayed when adding a new node of this content type.'),
+  ];
+  // Edit title.
+  $form['node_form_title']['edit_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Edit Title'),
+    '#default_value' => $type->getThirdPartySetting('node_form_title', 'edit_title', 'Edit [node:title]'),
+    '#description' => t('The title displayed when editing an existing node of this content type.'),
+  ];
+
+  // Validation.
+  $form['#validate'][] = 'node_form_title_node_type_form_validate';
+
+  // Entity builder for third-party settings.
+  $form['#entity_builders'][] = 'node_form_title_node_type_form_builder';
+}
+
+function node_form_title_node_type_form_validate(&$form, FormStateInterface $form_state) {
+  // TODO: Validate it.
+}
+
+function node_form_title_node_type_form_builder($entity_type, NodeTypeInterface $type, &$form, FormStateInterface $form_state) {
+  $type->setThirdPartySetting('node_form_title', 'add_title', $form_state->getValue('add_title'));
+  $type->setThirdPartySetting('node_form_title', 'edit_title', $form_state->getValue('edit_title'));
+}
+
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function node_form_title_form_node_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  // Retrieve the node from the form.
+  $node = $form_state->getFormObject()->getEntity();
+
+  // Get the node type.
+  $node_type = $node->type->entity;
+
+  // Get the usual title as a fallback.
+  $default_title = '';
+  $request = \Drupal::request();
+  if ($route = $request->attributes->get(\Symfony\Cmf\Component\Routing\RouteObjectInterface::ROUTE_OBJECT)) {
+    $default_title = \Drupal::service('title_resolver')->getTitle($request, $route);
+  }
+
+  if ($node->isNew()) {
+    $page_title = $node_type->getThirdPartySetting('node_form_title', 'add_title', !empty($default_title) ? $default_title : 'Create new ' . $node_type->label());
+  }
+  else {
+    $page_title = $node_type->getThirdPartySetting('node_form_title', 'edit_title', !empty($default_title) ? $default_title : 'Edit [node:title]');
+    $page_title = Drupal::token()->replace($page_title, ['node' => $node]);
+  }
+
+  $form['#title'] = $page_title;
+}
