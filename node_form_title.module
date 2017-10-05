@@ -11,6 +11,20 @@ use Drupal\node\NodeInterface;
 use Drupal\user\Entity\User;
 
 /**
+ * Implements hook_help().
+ */
+function node_form_title_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.node_form_title':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Node Form Title module provides a means for altering the page title on node add and edit forms.') . '</p>';
+      $output .= '<p>' . t('Node tokens can be used for each individual content type.') . '</p>';
+      break;
+  }
+}
+
+/**
  * Implements hook_form_BASE_FORM_ID_alter().
  *
  * @param $form
@@ -48,10 +62,26 @@ function node_form_title_form_node_type_form_alter(&$form, FormStateInterface $f
   $form['#entity_builders'][] = 'node_form_title_node_type_form_builder';
 }
 
+/**
+ * Validation function for node_form_title_form_node_type_form_alter().
+ *
+ * @see node_form_title_form_node_type_form_alter()
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ */
 function node_form_title_node_type_form_validate(&$form, FormStateInterface $form_state) {
-  // TODO: Validate it.
+  // TODO: Validation.
 }
 
+/**
+ * Entity builder for NodeTypeInterface.
+ *
+ * @param $entity_type
+ * @param NodeTypeInterface $type
+ * @param $form
+ * @param FormStateInterface $form_state
+ */
 function node_form_title_node_type_form_builder($entity_type, NodeTypeInterface $type, &$form, FormStateInterface $form_state) {
   $type->setThirdPartySetting('node_form_title', 'add_title', $form_state->getValue('add_title'));
   $type->setThirdPartySetting('node_form_title', 'edit_title', $form_state->getValue('edit_title'));
@@ -68,20 +98,24 @@ function node_form_title_form_node_form_alter(&$form, \Drupal\Core\Form\FormStat
   // Get the node type.
   $node_type = $node->type->entity;
 
-  // Get the usual title as a fallback.
+  // Get the default title as a fallback.
   $default_title = '';
   $request = \Drupal::request();
   if ($route = $request->attributes->get(\Symfony\Cmf\Component\Routing\RouteObjectInterface::ROUTE_OBJECT)) {
     $default_title = \Drupal::service('title_resolver')->getTitle($request, $route);
   }
 
+  // Check whether we are adding a new node or editing an existing node.
   if ($node->isNew()) {
     $page_title = $node_type->getThirdPartySetting('node_form_title', 'add_title', !empty($default_title) ? $default_title : 'Create new ' . $node_type->label());
   }
   else {
     $page_title = $node_type->getThirdPartySetting('node_form_title', 'edit_title', !empty($default_title) ? $default_title : 'Edit [node:title]');
-    $page_title = Drupal::token()->replace($page_title, ['node' => $node]);
   }
 
+  // Replace tokens.
+  $page_title = Drupal::token()->replace($page_title, ['node' => $node]);
+
+  // Set page title.
   $form['#title'] = $page_title;
 }

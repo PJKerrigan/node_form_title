@@ -1,0 +1,15 @@
+# Ignore PHPStorm IDE files #
+#############################
+/.idea
+
+# OS generated files #
+######################
+.DS_Store*
+ehthumbs.db
+Icon
+Thumbs.db
+._*
+
+# Vim generated files #
+######################
+*.un~
